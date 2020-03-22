@@ -1,2 +1,2 @@
-# tutorial-advanced-crm
-Tutorial covering advanced CRM with Image Message Templates, dynamic images, text and promotions
+# tutorial-advanced-image-messages
+Tutorial covering advanced Image Message usage with multiple images and buttons, text overlays, dynamic text, offer timers etc..
