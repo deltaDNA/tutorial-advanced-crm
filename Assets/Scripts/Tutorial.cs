@@ -5,10 +5,22 @@ using UnityEngine.UI;
 
 using DeltaDNA; 
 
+public class extendedButton
+{
+    Transform transform; 
+
+    public extendedButton(Transform transform)
+    {
+        this.transform = transform;
+        
+    }
+}
+
 public class Tutorial : MonoBehaviour
 {
     int userLevel = 1;
-    public Text txtUserLevel ; 
+    public Text txtUserLevel ;
+    public Text overlayTextPrefab; 
 
     // Start is called before the first frame update
     void Start()
@@ -83,13 +95,52 @@ public class Tutorial : MonoBehaviour
             if (imageMessage.Parameters != null) myGameParameterHandler(imageMessage.Parameters);
         };
 
+        imageMessage.OnDidReceiveResources += () =>
+        {
+            Debug.Log("Received Image Message Assets");
+        };
+
+        // This Image Message Contains contains custom JSON to extend capabilities of contents
+        if (imageMessage.Parameters.ContainsKey("actionExtension"))
+        {
+            ProcessDynamicParameters(imageMessage);
+        }
+        
+        
         // the image message is already cached and prepared so it will show instantly
         imageMessage.Show();
     }
 
 
+    public void ProcessDynamicParameters(ImageMessage imageMessage)
+    {
+        Debug.Log("Extended Image Message Processing");
+        var extensions = imageMessage.Parameters["actionExtension"];
 
+        GameObject imgMessage = GameObject.Find("DeltaDNA Image Message"); 
+        if (imgMessage != null)
+        {
+            List<extendedButton> extendedButtons = new List<extendedButton>();
 
+            Debug.Log("Got Image Message, traverse buttons");
+            int counter = 0;
+            Button[] buttons = imgMessage.GetComponentsInChildren<Button>();
+
+            foreach(Button b in buttons)
+                {
+                    if (b.name =="Button")
+                    {
+                        extendedButtons.Add(new extendedButton(b.transform));
+                        if (counter == 4)
+                        {
+                            Text overlayText = Instantiate(overlayTextPrefab, b.transform.position, b.transform.rotation) as Text;
+                           
+                        }
+                        counter++;
+                    }
+                }
+        }
+    }
 
     public void BttnLevelUp_Clicked()
     {
