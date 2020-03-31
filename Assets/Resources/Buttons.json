@@ -1,0 +1,45 @@
+{
+	"buttons": [
+		{
+			"id": "Button 1"
+		},
+		{
+			"id": "Button 2"
+		},
+		{
+			"id": "Button 3"
+		},
+		{
+			"id": "Button 4",
+			"text": "100",
+			"size": 36
+		},
+		{
+			"id": "Button 5",
+			"text": "Laurie's Market",
+			"size": 48,
+			"alignment":"UpperCenter"
+		},
+		{
+			"id": "Button 6",
+			"text": "600",
+			"size": 36
+
+		},
+		{
+			"id": "Button 7",
+			"text": "300",
+			"size": 36
+		},
+		{
+			"id": "Button 8",
+			"countdown": 720			
+		},
+		{
+			"id": "Button 9"
+		},
+		{
+			"id": "Main Image"
+		}
+	]
+}

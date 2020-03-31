@@ -3,24 +3,147 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-using DeltaDNA; 
+using DeltaDNA;
+using System;
 
-public class extendedButton
+[System.Serializable]
+public class DynamicButton
 {
-    Transform transform; 
 
-    public extendedButton(Transform transform)
+    public string id;
+    public string text;
+    public int size;
+    public string countdown;
+    public string alignment;
+}
+
+
+[System.Serializable]
+public class DynamicButtonList
+{
+    public List<DynamicButton> buttons;
+    public DynamicButtonList()
     {
-        this.transform = transform;
-        
+        buttons = new List<DynamicButton>();
+    }
+    public void LoadConfig()
+    {
+        // Load dynamic buttons array with the JSON configuration from gameParameters sent with Image Message
+        var extensions = Resources.Load<TextAsset>("Buttons");
+        //var extensions = im.Parameters["actionExtension"];
+        buttons = JsonUtility.FromJson<DynamicButtonList>(extensions.ToString()).buttons;
     }
 }
+
+public class OfferTimer
+{
+    public DateTime offerExpityTime;
+    public OfferTimer(int duration)
+    {
+        offerExpityTime = DateTime.Now.AddSeconds(duration);
+    }
+    public OfferTimer(DateTime expiryDateTime)
+    {
+        offerExpityTime = expiryDateTime;
+    }
+
+}
+
+
+public class DynamicImageMessage  : MonoBehaviour 
+{
+   
+    private ImageMessage imageMessage;
+    public DynamicButtonList dynamicButtonList;
+   
+    public void SetImageMessage(ImageMessage imageMessage)
+    {
+        this.imageMessage = imageMessage; 
+    }
+
+    public void Start()
+    {
+        dynamicButtonList = new DynamicButtonList();
+
+        dynamicButtonList.LoadConfig();
+        Debug.Log(string.Format("Found {0} buttons in Dynamic Button Configuration", dynamicButtonList.buttons.Count));
+
+        LoadImageMessageLayout();
+
+    }
+
+    void LoadImageMessageLayout()
+    {
+        Debug.Log("Loading Image Message Layout - isShowing = " + imageMessage.IsShowing().ToString());
+        GameObject o = GameObject.Find("DeltaDNA Image Message");
+
+        if (o != null)
+        {
+            Debug.Log("Image Message Children");
+            int counter = 0;
+            foreach(Transform t in o.transform)
+            {
+               
+                if(t.name == "Button")
+                {
+                    DynamicButton b = dynamicButtonList.buttons[counter];
+                    if (!string.IsNullOrEmpty(b.text) || !string.IsNullOrEmpty(b.countdown))
+                    {
+                        GameObject g = new GameObject("DynamicButtonText");
+                        
+
+                        Text txt = g.AddComponent<Text>();
+                        txt.text = b.text;
+                        txt.font = Resources.GetBuiltinResource(typeof(Font), "Arial.ttf") as Font;
+                        txt.fontSize = b.size != 0 ? b.size:30;
+
+                        if (b.alignment != null)
+                        { 
+                            TextAnchor a = (TextAnchor)Enum.Parse(typeof(TextAnchor), b.alignment.ToString());
+                            txt.alignment = a; 
+                        }
+                        else
+                        {
+                            txt.alignment = TextAnchor.MiddleCenter;
+                        }
+
+
+                        RectTransform r = g.GetComponent<RectTransform>();
+                        r.sizeDelta = new Vector2(txt.fontSize * 10, 100);
+
+
+                        g.transform.SetPositionAndRotation(t.transform.position, t.transform.rotation);
+                        g.transform.SetParent(o.transform);
+                    }
+                    counter++;
+                }
+                
+               
+            }
+        }
+
+
+
+    }
+
+
+
+
+}
+
+
+
+
+
+
 
 public class Tutorial : MonoBehaviour
 {
     int userLevel = 1;
     public Text txtUserLevel ;
-    public Text overlayTextPrefab; 
+    public Text overlayTextPrefab;
+
+   // public List<Level> levels; 
 
     // Start is called before the first frame update
     void Start()
@@ -82,8 +205,8 @@ public class Tutorial : MonoBehaviour
     {
         // Add a handler for the 'dismiss' action.
         imageMessage.OnDismiss += (ImageMessage.EventArgs obj) => {
-            Debug.Log("Image Message dismissed by " + obj.ID);
 
+            Debug.Log("Image Message dismissed by " + obj.ID);
             // NB : parameters not processed if player dismisses action
         };
 
@@ -100,47 +223,38 @@ public class Tutorial : MonoBehaviour
             Debug.Log("Received Image Message Assets");
         };
 
-        // This Image Message Contains contains custom JSON to extend capabilities of contents
-        if (imageMessage.Parameters.ContainsKey("actionExtension"))
-        {
-            ProcessDynamicParameters(imageMessage);
-        }
-        
-        
+
         // the image message is already cached and prepared so it will show instantly
         imageMessage.Show();
-    }
 
-
-    public void ProcessDynamicParameters(ImageMessage imageMessage)
-    {
-        Debug.Log("Extended Image Message Processing");
-        var extensions = imageMessage.Parameters["actionExtension"];
-
-        GameObject imgMessage = GameObject.Find("DeltaDNA Image Message"); 
-        if (imgMessage != null)
+        // This Image Message Contains contains custom JSON to extend capabilities of contents        
+        if (imageMessage.Parameters.ContainsKey("actionExtension"))
         {
-            List<extendedButton> extendedButtons = new List<extendedButton>();
-
-            Debug.Log("Got Image Message, traverse buttons");
-            int counter = 0;
-            Button[] buttons = imgMessage.GetComponentsInChildren<Button>();
-
-            foreach(Button b in buttons)
-                {
-                    if (b.name =="Button")
-                    {
-                        extendedButtons.Add(new extendedButton(b.transform));
-                        if (counter == 4)
-                        {
-                            Text overlayText = Instantiate(overlayTextPrefab, b.transform.position, b.transform.rotation) as Text;
-                           
-                        }
-                        counter++;
-                    }
-                }
+            // DynamicImageMessage dm = new DynamicImageMessage(imageMessage, this.transform);           
+            DynamicImageMessage dyn = gameObject.AddComponent<DynamicImageMessage>();
+            dyn.SetImageMessage(imageMessage);
         }
+
+
+
+
+
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     public void BttnLevelUp_Clicked()
     {
