@@ -69,6 +69,7 @@ public class Tutorial : MonoBehaviour
     }
 
 
+
     private void myImageMessageHandler(ImageMessage imageMessage)
     {
         // Add a handler for the 'dismiss' action.
@@ -95,7 +96,6 @@ public class Tutorial : MonoBehaviour
         // the image message is already cached and prepared so it will show instantly
         imageMessage.Show();
 
-
         // This Image Message Contains contains custom JSON to extend capabilities of contents        
         if (imageMessage.Parameters.ContainsKey("actionExtension"))
         {
@@ -111,6 +111,49 @@ public class Tutorial : MonoBehaviour
 
 
 
+
+    //  Generic Method to make an Engage In-Game Decision Point campaign request for an Image Message
+    private void DecisionPointImageMessageCampaignRequest(string decisionPointName, Params decisionPointParmeters)
+    {
+
+        DDNA.Instance.EngageFactory.RequestImageMessage(decisionPointName, decisionPointParmeters, (imageMessage) => {
+
+            // Check we got an engagement with a valid image message.
+            if (imageMessage != null)
+            {
+                Debug.Log("Engage Decision Point returned a valid image message.");
+                myImageMessageHandler(imageMessage);
+
+                // Process Multiple PopUps from decision point campaign
+                ProcessMultiplePopups(imageMessage.Parameters);
+            }
+            else
+            {
+                Debug.Log("Engage Decision Point didn't return an image message.");
+            }
+        });
+    }
+
+    private void ProcessMultiplePopups(Dictionary<string, object> gameParameters)
+    {       
+        // Check for "campaignList" game Parameter specifying follow on campaigns. 
+        if (gameParameters.ContainsKey("campaignList"))
+        {
+            CampaignList campaignList = new CampaignList();
+            campaignList.LoadCampaigns(gameParameters["campaignList"].ToString());
+
+            // Make additional Decision Poing Campaign requests for each campaign in campaignList
+            foreach(Campaign campaign in campaignList.campaigns)
+            {
+                Params dpRequestParams = new Params().AddParam("campaign", campaign.campaign);
+                DecisionPointImageMessageCampaignRequest(campaign.decisionPoint, dpRequestParams);
+            }
+        }
+    }
+
+
+
+    // UI Button Handlers
     public void BttnLevelUp_Clicked()
     {
         userLevel++;
@@ -124,4 +167,12 @@ public class Tutorial : MonoBehaviour
         DDNA.Instance.RecordEvent(myEvent).Run();
     }
 
+
+
+    public void BttnDecisionPointTest_Clicked()
+    {
+        DecisionPointImageMessageCampaignRequest("test", null);
+    }
+
 }
+
