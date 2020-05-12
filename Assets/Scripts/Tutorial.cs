@@ -25,6 +25,11 @@ public class Tutorial : MonoBehaviour
         // Allow multiple game parameter actions callbacks from a single event trigger        
         DDNA.Instance.Settings.MultipleActionsForEventTriggerEnabled = true;
 
+        // SDK slightly modified to display multiple Image Messages on a single event trigger
+        // Ln 197 of Helpers\Settings.cs added additional property
+        // Ln 91 of Triggers\EventAction additional condition added 
+        DDNA.Instance.Settings.MultipleActionsForImageMessagesEnabled = true;
+
         //Register default handlers for event triggered campaigns. These will be candidates for handling ANY Event-Triggered Campaigns. 
         //Any handlers added to RegisterEvent() calls with the .Add method will be evaluated before these default handlers. 
         DDNA.Instance.Settings.DefaultImageMessageHandler =
@@ -121,11 +126,13 @@ public class Tutorial : MonoBehaviour
             // Check we got an engagement with a valid image message.
             if (imageMessage != null)
             {
-                Debug.Log("Engage Decision Point returned a valid image message.");
-                myImageMessageHandler(imageMessage);
+
 
                 // Process Multiple PopUps from decision point campaign
                 ProcessMultiplePopups(imageMessage.Parameters);
+
+                Debug.Log("Engage Decision Point returned a valid image message.");
+                myImageMessageHandler(imageMessage);
             }
             else
             {
@@ -168,10 +175,16 @@ public class Tutorial : MonoBehaviour
     }
 
 
-
+    // Multi Popup Tests
     public void BttnDecisionPointTest_Clicked()
     {
         DecisionPointImageMessageCampaignRequest("test", null);
+    }
+    public void BttnEventTriggeredTest_Clicked()
+    {
+
+        GameEvent myEvent = new GameEvent("multiTest");
+        DDNA.Instance.RecordEvent(myEvent).Run();
     }
 
 }
