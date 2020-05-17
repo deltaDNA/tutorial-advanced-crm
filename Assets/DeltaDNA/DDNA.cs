@@ -239,6 +239,11 @@ namespace DeltaDNA {
             StartSDK(userID);
         }
 
+        public void SetPlayerSessionEvents(List<string> eventWhitelist)
+        {            
+            delegated.SetPlayerSessionEvents(eventWhitelist);
+        }
+
         /// <summary>
         /// Changes the session ID for the current User.
         /// </summary>

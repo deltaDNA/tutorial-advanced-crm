@@ -53,6 +53,8 @@ namespace DeltaDNA {
         internal abstract void StartSDK(bool newPlayer);
         internal abstract void StopSDK();
 
+        internal abstract void SetPlayerSessionEvents(List<string> eventsAllowedThisSession);
+
         internal abstract EventAction RecordEvent<T>(T gameEvent) where T : GameEvent<T>;
         internal abstract EventAction RecordEvent(string eventName);
         internal abstract EventAction RecordEvent(string eventName, Dictionary<string, object> eventParams);

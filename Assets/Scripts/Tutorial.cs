@@ -6,8 +6,6 @@ using UnityEngine.UI;
 using DeltaDNA;
 using System;
 
-
-
 public class Tutorial : MonoBehaviour
 {
     int userLevel = 1;
@@ -26,8 +24,9 @@ public class Tutorial : MonoBehaviour
         DDNA.Instance.Settings.MultipleActionsForEventTriggerEnabled = true;
 
         // SDK slightly modified to display multiple Image Messages on a single event trigger
-        // Ln 197 of Helpers\Settings.cs added additional property
-        // Ln 91 of Triggers\EventAction additional condition added 
+        // JIRA- DELTADNA-230
+        // Ln-197 of Helpers\Settings.cs added additional property
+        // Ln-91 of Triggers\EventAction additional condition added 
         DDNA.Instance.Settings.MultipleActionsForImageMessagesEnabled = true;
 
         //Register default handlers for event triggered campaigns. These will be candidates for handling ANY Event-Triggered Campaigns. 
@@ -40,10 +39,15 @@ public class Tutorial : MonoBehaviour
         DDNA.Instance.Settings.DefaultGameParameterHandler = new GameParametersHandler(gameParameters => {
             // do something with the game parameters
             myGameParameterHandler(gameParameters);
-        });
-
+        });        
         DDNA.Instance.SetLoggingLevel(DeltaDNA.Logger.Level.DEBUG);
         DDNA.Instance.StartSDK();
+
+
+        // Update UI to reflect Event Sending State
+        Text txtEventTracking = GameObject.Find("txtEventRecording").GetComponent<Text>();
+        string trackingState = PlayerPrefs.HasKey(DDNA.PF_KEY_STOP_TRACKING_ME) ? "DISABLED" : "ENABLED";
+        txtEventTracking.text = "Events Recording " + trackingState;
     }
 
 
@@ -71,8 +75,38 @@ public class Tutorial : MonoBehaviour
     {
         // Parameters Received      
         Debug.Log("Received game parameters from event trigger: " + DeltaDNA.MiniJSON.Json.Serialize(gameParameters));
-    }
 
+        if (gameParameters != null)
+        {
+            
+            if (gameParameters.ContainsKey("personalEventWhitelist"))
+            {
+                // The Personal Event Whitelist limits events the player can send during this session.
+                // It relies on some SDK modifications described in JIRA ticket 
+                var dict = DeltaDNA.MiniJSON.Json.Deserialize(gameParameters["personalEventWhitelist"].ToString()) as Dictionary<string, object>;
+
+                if (dict.ContainsKey("events"))
+                {
+                    Debug.Log("Player restricted to sending only the following events " + DeltaDNA.MiniJSON.Json.Serialize(dict["events"])); 
+                    List<string> personalEventsWhitelis = new List<string>();
+
+                    foreach (object s in (List<object>)dict["events"])
+                    {
+                        personalEventsWhitelis.Add(s.ToString());
+                    }
+                    DDNA.Instance.SetPlayerSessionEvents(personalEventsWhitelis);
+                }
+            } else if (gameParameters.ContainsKey("eventsDisabled") && Convert.ToInt32(gameParameters["eventsDisabled"]) == 1)
+            {
+                // Key added to game to Stop tracking player based on GDPR functionality from the next session onwards
+                // Can be reversed by deleting this key. Can also be achieved with DDNA.Instance.StopTrackingMe();                
+                PlayerPrefs.SetInt(DDNA.PF_KEY_STOP_TRACKING_ME, 1);
+                Debug.Log("Stop Tracking Player next Session");                
+            }
+        }
+
+
+    }
 
 
     private void myImageMessageHandler(ImageMessage imageMessage)
@@ -166,18 +200,18 @@ public class Tutorial : MonoBehaviour
         userLevel++;
         txtUserLevel.text = string.Format("Level : {0}", userLevel);
 
-
         GameEvent myEvent = new GameEvent("levelUp")
             .AddParam("userLevel", userLevel)
             .AddParam("levelUpName", string.Format("Level {0}", userLevel));
-
+        
         DDNA.Instance.RecordEvent(myEvent).Run();
+
     }
 
 
     // Multi Popup Tests
     public void BttnDecisionPointTest_Clicked()
-    {
+    { 
         DecisionPointImageMessageCampaignRequest("test", null);
     }
     public void BttnEventTriggeredTest_Clicked()
@@ -186,6 +220,14 @@ public class Tutorial : MonoBehaviour
         GameEvent myEvent = new GameEvent("multiTest");
         DDNA.Instance.RecordEvent(myEvent).Run();
     }
+   
+    // Restart Player Tracking next session
+    public void BttnStartTrackingMe()
+    {
+        PlayerPrefs.DeleteKey(DDNA.PF_KEY_STOP_TRACKING_ME);       
+        Debug.Log("Start tracking me again next session");
+    }
+    
 
 }
 

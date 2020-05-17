@@ -51,6 +51,9 @@ namespace DeltaDNA {
         private ReadOnlyCollection<string> cacheImages =
             new ReadOnlyCollection<string>(new List<string>());
 
+        private List<string> eventsAllowedThisSession =
+            new List<string>();
+
         private bool hasSentDefaultEvents = false;
         private bool newPlayer;
         private int retryAttempts = 0; 
@@ -163,12 +166,22 @@ namespace DeltaDNA {
                 Logger.LogDebug("SDK not running");
             }
         }
+        
+        override internal void SetPlayerSessionEvents(List<string> events)
+        {
+            // Set the event whitelist for this player sesison, can be remotely set with Engage
+            eventsAllowedThisSession = events; 
 
+        }
         override internal EventAction RecordEvent<T>(T gameEvent) {
             if (!started) {
                 throw new Exception("You must first start the SDK via the StartSDK method");
             } else if (whitelistEvents.Count != 0 && !whitelistEvents.Contains(gameEvent.Name)) {
                 Logger.LogDebug("Event " + gameEvent.Name + " is not whitelisted, ignoring");
+                return EventAction.CreateEmpty(gameEvent as GameEvent);
+            } else if (eventsAllowedThisSession.Count != 0 && !eventsAllowedThisSession.Contains(gameEvent.Name))
+            {
+                Logger.LogDebug("Event " + gameEvent.Name + " is not whitelisted for this player session, ignoring");
                 return EventAction.CreateEmpty(gameEvent as GameEvent);
             }
 

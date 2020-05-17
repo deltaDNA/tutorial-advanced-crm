@@ -52,7 +52,10 @@ namespace DeltaDNA {
         override internal void StopSDK() {
             started = false;
         }
-
+        override internal void SetPlayerSessionEvents(List<string> eventsAllowedThisSession)
+        {
+            return;
+        }
         override internal EventAction RecordEvent<T>(T gameEvent) {
             return EventAction.CreateEmpty(gameEvent as GameEvent);
         }
